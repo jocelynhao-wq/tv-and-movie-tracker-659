@@ -336,6 +336,31 @@
   .btn-logout { background: transparent; border: none; color: var(--muted); padding: 0; font-size: 12.5px; font-family: inherit; cursor: pointer; transition: color .15s; text-decoration: underline; text-underline-offset: 3px; }
   .btn-logout:hover { color: var(--text); }
 
+  /* Confirm dialog */
+  .confirm-overlay {
+    position: fixed; inset: 0; z-index: 300; background: rgba(24,22,15,.55); backdrop-filter: blur(2px);
+    display: flex; align-items: center; justify-content: center; padding: 20px;
+    animation: fade .15s ease;
+  }
+  .confirm-overlay[hidden] { display: none; }
+  .confirm-card {
+    width: 100%; max-width: 360px; background: var(--surface); border: 1px solid var(--line);
+    box-shadow: var(--shadow); padding: 28px 28px 24px;
+    animation: pop .18s ease;
+  }
+  .confirm-card p { margin: 0 0 24px; font-size: 14.5px; line-height: 1.6; color: var(--text); }
+  .confirm-actions { display: flex; gap: 10px; justify-content: flex-end; }
+  .confirm-cancel {
+    padding: 9px 18px; border: 1px solid var(--line); background: transparent;
+    color: var(--muted); font-size: 13px; font-weight: 400; font-family: inherit; cursor: pointer; transition: background .15s, color .15s;
+  }
+  .confirm-cancel:hover { background: var(--bg-2); color: var(--text); }
+  .confirm-ok {
+    padding: 9px 18px; border: 1px solid transparent; background: var(--danger);
+    color: #fff; font-size: 13px; font-weight: 500; font-family: inherit; cursor: pointer; transition: opacity .15s;
+  }
+  .confirm-ok:hover { opacity: .85; }
+
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
   @media (max-width: 640px) {
     /* Header: row 1 = brand + add btn, row 2 = tabs */
@@ -476,6 +501,17 @@
 </header>
 
 <!-- TV SEARCH MODAL -->
+<!-- Confirm dialog -->
+<div class="confirm-overlay" id="confirmOverlay" hidden role="dialog" aria-modal="true" aria-labelledby="confirmMsg">
+  <div class="confirm-card">
+    <p id="confirmMsg"></p>
+    <div class="confirm-actions">
+      <button class="confirm-cancel" id="confirmCancel">Cancel</button>
+      <button class="confirm-ok" id="confirmOk">Remove</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="searchModal" hidden>
   <div class="modal-card" role="dialog" aria-modal="true" aria-label="Search TV shows">
     <div class="modal-head">
@@ -578,6 +614,30 @@
 
 <script>
 const $ = (s, r = document) => r.querySelector(s);
+
+function customConfirm(message) {
+  return new Promise((resolve) => {
+    const overlay = document.getElementById("confirmOverlay");
+    document.getElementById("confirmMsg").textContent = message;
+    overlay.hidden = false;
+    const cleanup = (result) => {
+      overlay.hidden = true;
+      ok.removeEventListener("click", onOk);
+      cancel.removeEventListener("click", onCancel);
+      overlay.removeEventListener("click", onBackdrop);
+      resolve(result);
+    };
+    const ok = document.getElementById("confirmOk");
+    const cancel = document.getElementById("confirmCancel");
+    const onOk = () => cleanup(true);
+    const onCancel = () => cleanup(false);
+    const onBackdrop = (e) => { if (e.target === overlay) cleanup(false); };
+    ok.addEventListener("click", onOk);
+    cancel.addEventListener("click", onCancel);
+    overlay.addEventListener("click", onBackdrop);
+  });
+}
+
 const api = async (path, opts) => {
   const r = await fetch(path, opts);
   if (r.status === 401) {
@@ -929,7 +989,7 @@ function refreshOverall() {
 }
 
 async function removeCurrentShow() {
-  if (!confirm(`Remove "${currentShow.name}" and all its tracked progress?`)) return;
+  if (!await customConfirm(`Remove "${currentShow.name}" and all its tracked progress?`)) return;
   try { await api("/api/shows/" + currentShow.id, { method: "DELETE" }); toast("Removed from library"); closeShow(); }
   catch (e) { toast(e.message, true); }
 }
@@ -1121,7 +1181,7 @@ async function toggleMovieWatched() {
 }
 
 async function removeCurrentMovie() {
-  if (!confirm(`Remove "${currentMovie.title}" from your library?`)) return;
+  if (!await customConfirm(`Remove "${currentMovie.title}" from your library?`)) return;
   try {
     await api("/api/movies/" + currentMovie.id, { method: "DELETE" });
     libraryMovies = libraryMovies.filter((m) => m.id !== currentMovie.id);
