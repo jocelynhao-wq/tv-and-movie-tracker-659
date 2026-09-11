@@ -335,6 +335,27 @@
   .user-email { font-size: 12.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; }
   .btn-logout { background: transparent; border: none; color: var(--muted); padding: 0; font-size: 12.5px; font-family: inherit; cursor: pointer; transition: color .15s; text-decoration: underline; text-underline-offset: 3px; }
   .btn-logout:hover { color: var(--text); }
+  .btn-settings { background: transparent; border: 1px solid var(--line); color: var(--muted); padding: 6px; display: grid; place-items: center; cursor: pointer; transition: color .15s, background .15s; border-radius: 2px; }
+  .btn-settings:hover { color: var(--text); background: var(--bg-2); }
+
+  /* Settings page */
+  .settings-header { margin: 28px 0 28px; }
+  .settings-header h2 { font-size: clamp(22px, 3vw, 30px); font-family: "DM Serif Display", Georgia, serif; font-weight: 400; margin: 0 0 6px; }
+  .settings-header p { color: var(--muted); font-size: 13.5px; margin: 0; }
+  .settings-section { border: 1px solid var(--line); padding: 24px; margin-bottom: 10px; }
+  .settings-section-title { font-size: 13px; font-weight: 600; color: var(--text); margin: 0 0 4px; letter-spacing: .01em; }
+  .settings-current { color: var(--muted); font-size: 13px; margin: 0 0 20px; }
+  .settings-row { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
+  .settings-field { flex: 1; min-width: 180px; }
+  .settings-field label { display: block; font-size: 11.5px; font-weight: 400; color: var(--muted); margin-bottom: 6px; letter-spacing: .03em; text-transform: uppercase; }
+  .settings-field input { width: 100%; padding: 10px 12px; background: transparent; border: 1px solid var(--line); color: var(--text); font-size: 14px; font-family: inherit; outline: none; transition: border-color .2s; }
+  .settings-field input:focus { border-color: var(--text); }
+  .settings-save { padding: 10px 20px; background: var(--text); color: var(--bg); border: none; font-size: 13px; font-weight: 500; font-family: inherit; cursor: pointer; transition: opacity .2s; white-space: nowrap; flex-shrink: 0; height: 40px; align-self: flex-end; }
+  .settings-save:hover { opacity: .8; }
+  .settings-save:disabled { opacity: .4; cursor: default; }
+  .settings-msg { font-size: 12.5px; margin: 10px 0 0; min-height: 18px; }
+  .settings-msg.ok { color: var(--good); }
+  .settings-msg.err { color: var(--danger); }
 
   /* Confirm dialog */
   .confirm-overlay {
@@ -495,6 +516,9 @@
         <span id="addBtnLabel">Add a show</span>
       </button>
       <span class="user-email" id="userEmail"></span>
+      <button class="btn-settings" id="settingsBtn" title="Account settings" aria-label="Account settings">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </button>
       <button class="btn-logout" id="logoutBtn">Log out</button>
     </div>
   </div>
@@ -608,6 +632,74 @@
   <div class="wrap" id="moviesDetailBody"></div>
 </div>
 
+<!-- SETTINGS PAGE -->
+<div id="settingsPage" style="display:none">
+  <div class="wrap" style="max-width:640px">
+    <button class="back" id="settingsBackBtn">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="m15 18-6-6 6-6"/></svg>
+      Back
+    </button>
+    <div class="settings-header">
+      <h2>Account settings</h2>
+      <p>Update your username, email address, or password.</p>
+    </div>
+
+    <!-- Username -->
+    <div class="settings-section">
+      <p class="settings-section-title">Username</p>
+      <p class="settings-current" id="settingsCurrentUsername"></p>
+      <div class="settings-row">
+        <div class="settings-field">
+          <label for="settingsNewUsername">New username</label>
+          <input type="text" id="settingsNewUsername" autocomplete="off" placeholder="e.g. coolwatcher99" pattern="[a-zA-Z0-9_]{3,20}">
+        </div>
+        <div class="settings-field">
+          <label for="settingsPwForUsername">Current password</label>
+          <input type="password" id="settingsPwForUsername" autocomplete="current-password" placeholder="Required to save">
+        </div>
+        <button class="settings-save" id="saveUsernameBtn">Save</button>
+      </div>
+      <p class="settings-msg" id="usernameMsg"></p>
+    </div>
+
+    <!-- Email -->
+    <div class="settings-section">
+      <p class="settings-section-title">Email address</p>
+      <p class="settings-current" id="settingsCurrentEmail"></p>
+      <div class="settings-row">
+        <div class="settings-field">
+          <label for="settingsNewEmail">New email</label>
+          <input type="email" id="settingsNewEmail" autocomplete="off" placeholder="you@example.com">
+        </div>
+        <div class="settings-field">
+          <label for="settingsPwForEmail">Current password</label>
+          <input type="password" id="settingsPwForEmail" autocomplete="current-password" placeholder="Required to save">
+        </div>
+        <button class="settings-save" id="saveEmailBtn">Save</button>
+      </div>
+      <p class="settings-msg" id="emailMsg"></p>
+    </div>
+
+    <!-- Password -->
+    <div class="settings-section">
+      <p class="settings-section-title">Password</p>
+      <p class="settings-current">Change your login password. Must be at least 6 characters.</p>
+      <div class="settings-row">
+        <div class="settings-field">
+          <label for="settingsCurPw">Current password</label>
+          <input type="password" id="settingsCurPw" autocomplete="current-password" placeholder="Current password">
+        </div>
+        <div class="settings-field">
+          <label for="settingsNewPw">New password</label>
+          <input type="password" id="settingsNewPw" autocomplete="new-password" placeholder="New password">
+        </div>
+        <button class="settings-save" id="savePasswordBtn">Save</button>
+      </div>
+      <p class="settings-msg" id="passwordMsg"></p>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 </div><!-- #appShell -->
@@ -651,7 +743,7 @@ const api = async (path, opts) => {
 const esc = (s) => (s ?? "").toString().replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
 // ---------- Page routing ----------
-const pages = ["tvHome", "tvDetail", "moviesHome", "moviesDetail"];
+const pages = ["tvHome", "tvDetail", "moviesHome", "moviesDetail", "settingsPage"];
 function showPage(id) {
   pages.forEach((p) => { document.getElementById(p).style.display = p === id ? "block" : "none"; });
   window.scrollTo(0, 0);
@@ -1276,6 +1368,98 @@ document.getElementById("authForm").addEventListener("submit", async (e) => {
     authSubmitBtn.disabled = false;
     authSubmitBtn.textContent = authMode === "login" ? "Log in" : "Create account";
   }
+});
+
+// ---------- Settings ----------
+let settingsPreviousPage = "tvHome";
+
+function openSettings() {
+  settingsPreviousPage = activeTab === "tv" ? "tvHome" : "moviesHome";
+  document.getElementById("settingsCurrentUsername").textContent = currentUser.username;
+  document.getElementById("settingsCurrentEmail").textContent = currentUser.email;
+  ["settingsNewUsername","settingsPwForUsername","settingsNewEmail","settingsPwForEmail","settingsCurPw","settingsNewPw"].forEach(id => {
+    document.getElementById(id).value = "";
+  });
+  ["usernameMsg","emailMsg","passwordMsg"].forEach(id => {
+    const el = document.getElementById(id);
+    el.textContent = "";
+    el.className = "settings-msg";
+  });
+  showPage("settingsPage");
+}
+
+document.getElementById("settingsBtn").addEventListener("click", openSettings);
+document.getElementById("settingsBackBtn").addEventListener("click", () => showPage(settingsPreviousPage));
+
+async function saveSettingsField({ btnId, msgId, payload, onSuccess }) {
+  const btn = document.getElementById(btnId);
+  const msg = document.getElementById(msgId);
+  btn.disabled = true;
+  msg.textContent = "";
+  msg.className = "settings-msg";
+  try {
+    const r = await fetch("/api/auth/profile", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(data.error || "Save failed");
+    currentUser = { ...currentUser, ...data };
+    document.getElementById("userEmail").textContent = "@" + currentUser.username;
+    document.getElementById("settingsCurrentUsername").textContent = currentUser.username;
+    document.getElementById("settingsCurrentEmail").textContent = currentUser.email;
+    msg.textContent = "Saved.";
+    msg.className = "settings-msg ok";
+    if (onSuccess) onSuccess();
+  } catch (e) {
+    msg.textContent = e.message;
+    msg.className = "settings-msg err";
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+document.getElementById("saveUsernameBtn").addEventListener("click", () => {
+  saveSettingsField({
+    btnId: "saveUsernameBtn", msgId: "usernameMsg",
+    payload: {
+      currentPassword: document.getElementById("settingsPwForUsername").value,
+      username: document.getElementById("settingsNewUsername").value.trim(),
+    },
+    onSuccess: () => {
+      document.getElementById("settingsNewUsername").value = "";
+      document.getElementById("settingsPwForUsername").value = "";
+    },
+  });
+});
+
+document.getElementById("saveEmailBtn").addEventListener("click", () => {
+  saveSettingsField({
+    btnId: "saveEmailBtn", msgId: "emailMsg",
+    payload: {
+      currentPassword: document.getElementById("settingsPwForEmail").value,
+      email: document.getElementById("settingsNewEmail").value.trim(),
+    },
+    onSuccess: () => {
+      document.getElementById("settingsNewEmail").value = "";
+      document.getElementById("settingsPwForEmail").value = "";
+    },
+  });
+});
+
+document.getElementById("savePasswordBtn").addEventListener("click", () => {
+  saveSettingsField({
+    btnId: "savePasswordBtn", msgId: "passwordMsg",
+    payload: {
+      currentPassword: document.getElementById("settingsCurPw").value,
+      newPassword: document.getElementById("settingsNewPw").value,
+    },
+    onSuccess: () => {
+      document.getElementById("settingsCurPw").value = "";
+      document.getElementById("settingsNewPw").value = "";
+    },
+  });
 });
 
 document.getElementById("logoutBtn").addEventListener("click", async () => {

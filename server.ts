@@ -421,6 +421,61 @@ export default {
           : json({ error: "Unauthorized" }, 401);
       }
 
+      if (pathname === "/api/auth/profile" && req.method === "PATCH") {
+        const user = await getSessionUser(req);
+        if (!user) return json({ error: "Unauthorized" }, 401);
+        const body = (await req.json().catch(() => null)) as {
+          currentPassword?: string;
+          username?: string;
+          email?: string;
+          newPassword?: string;
+        } | null;
+        if (!body?.currentPassword)
+          return json({ error: "Current password is required" }, 400);
+
+        const row = db.query("SELECT password_hash FROM users WHERE id = ?").get(user.id) as { password_hash: string } | null;
+        if (!row || !(await Bun.password.verify(body.currentPassword, row.password_hash)))
+          return json({ error: "Current password is incorrect" }, 401);
+
+        const updates: string[] = [];
+        const params: unknown[] = [];
+
+        if (body.username !== undefined) {
+          const u = body.username.trim();
+          if (!/^[a-zA-Z0-9_]{3,20}$/.test(u))
+            return json({ error: "Username must be 3–20 characters (letters, numbers, underscores only)" }, 400);
+          if (db.query("SELECT id FROM users WHERE username = ? AND id != ?").get(u.toLowerCase(), user.id))
+            return json({ error: "Username already taken" }, 409);
+          updates.push("username = ?");
+          params.push(u.toLowerCase());
+        }
+
+        if (body.email !== undefined) {
+          const e = body.email.trim().toLowerCase();
+          if (!e.includes("@"))
+            return json({ error: "Valid email required" }, 400);
+          if (db.query("SELECT id FROM users WHERE email = ? AND id != ?").get(e, user.id))
+            return json({ error: "Email already in use" }, 409);
+          updates.push("email = ?");
+          params.push(e);
+        }
+
+        if (body.newPassword !== undefined) {
+          if (body.newPassword.length < 6)
+            return json({ error: "New password must be at least 6 characters" }, 400);
+          updates.push("password_hash = ?");
+          params.push(await Bun.password.hash(body.newPassword));
+        }
+
+        if (!updates.length)
+          return json({ error: "Nothing to update" }, 400);
+
+        params.push(user.id);
+        db.query(`UPDATE users SET ${updates.join(", ")} WHERE id = ?`).run(...params);
+        const updated = db.query("SELECT id, username, email FROM users WHERE id = ?").get(user.id) as any;
+        return json({ id: updated.id, username: updated.username, email: updated.email });
+      }
+
       // Serve static files (public — no auth required, only for non-API paths)
       if (!pathname.startsWith("/api/")) {
         const stat = await serveStatic(pathname);
