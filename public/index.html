@@ -330,13 +330,34 @@
   .pw-wrap input { padding-right: 42px; }
   .pw-toggle { position: absolute; right: 11px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--faint); cursor: pointer; padding: 4px; display: flex; transition: color .15s; }
   .pw-toggle:hover { color: var(--muted); }
-  /* User menu */
+  /* User menu dropdown */
   .head-right { display: flex; align-items: center; gap: 12px; margin-left: auto; }
-  .user-email { font-size: 12.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; }
-  .btn-logout { background: transparent; border: none; color: var(--muted); padding: 0; font-size: 12.5px; font-family: inherit; cursor: pointer; transition: color .15s; text-decoration: underline; text-underline-offset: 3px; }
-  .btn-logout:hover { color: var(--text); }
-  .btn-settings { background: transparent; border: 1px solid var(--line); color: var(--muted); padding: 6px; display: grid; place-items: center; cursor: pointer; transition: color .15s, background .15s; border-radius: 2px; }
-  .btn-settings:hover { color: var(--text); background: var(--bg-2); }
+  .user-menu { position: relative; }
+  .user-avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--text); color: var(--bg); border: none;
+    font-family: "DM Serif Display", Georgia, serif; font-size: 15px; font-weight: 400;
+    cursor: pointer; display: grid; place-items: center; transition: opacity .15s; flex-shrink: 0;
+  }
+  .user-avatar:hover { opacity: .78; }
+  .user-dropdown {
+    position: absolute; right: 0; top: calc(100% + 8px);
+    background: var(--surface); border: 1px solid var(--line);
+    box-shadow: var(--shadow); width: 224px; z-index: 50;
+    animation: pop .15s ease;
+  }
+  .user-dropdown[hidden] { display: none; }
+  .dropdown-info { padding: 14px 16px 13px; border-bottom: 1px solid var(--line); }
+  .dropdown-username { font-weight: 600; font-size: 13.5px; }
+  .dropdown-email { color: var(--muted); font-size: 12px; margin-top: 3px; word-break: break-all; }
+  .dropdown-item {
+    display: flex; align-items: center; gap: 10px; width: 100%;
+    padding: 11px 16px; border: none; background: transparent;
+    color: var(--text); font-size: 13px; font-family: inherit;
+    cursor: pointer; text-align: left; transition: background .12s;
+  }
+  .dropdown-item:hover { background: var(--bg-2); }
+  .dropdown-item-danger { color: var(--danger); }
 
   /* Settings page */
   .settings-header { margin: 28px 0 28px; }
@@ -410,9 +431,7 @@
     }
     .tab-btn.on { border-bottom-color: var(--text); }
     .head-right { gap: 8px; }
-    .user-email { display: none; }
     .add-btn { padding: 7px 12px; font-size: 12.5px; }
-    .btn-logout { font-size: 12px; }
     .tab-btn svg { display: none; }
 
     /* Wrap */
@@ -515,11 +534,25 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
         <span id="addBtnLabel">Add a show</span>
       </button>
-      <span class="user-email" id="userEmail"></span>
-      <button class="btn-settings" id="settingsBtn" title="Account settings" aria-label="Account settings">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-      </button>
-      <button class="btn-logout" id="logoutBtn">Log out</button>
+      <div class="user-menu">
+        <button class="user-avatar" id="userAvatarBtn" aria-label="Account menu" aria-expanded="false" aria-haspopup="true">
+          <span id="userInitial"></span>
+        </button>
+        <div class="user-dropdown" id="userDropdown" hidden role="menu">
+          <div class="dropdown-info">
+            <div class="dropdown-username" id="dropdownUsername"></div>
+            <div class="dropdown-email" id="dropdownEmail"></div>
+          </div>
+          <button class="dropdown-item" id="settingsBtn" role="menuitem">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            Settings
+          </button>
+          <button class="dropdown-item dropdown-item-danger" id="logoutBtn" role="menuitem">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            Log out
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 </header>
@@ -1298,7 +1331,13 @@ function showAuthPage() {
 function showAppPage() {
   document.getElementById("authPage").style.display = "none";
   document.getElementById("appShell").style.display = "";
-  document.getElementById("userEmail").textContent = "@" + currentUser.username;
+  updateUserMenuDisplay();
+}
+
+function updateUserMenuDisplay() {
+  document.getElementById("userInitial").textContent = (currentUser.username[0] || "?").toUpperCase();
+  document.getElementById("dropdownUsername").textContent = "@" + currentUser.username;
+  document.getElementById("dropdownEmail").textContent = currentUser.email;
 }
 
 async function initApp() {
@@ -1388,7 +1427,32 @@ function openSettings() {
   showPage("settingsPage");
 }
 
-document.getElementById("settingsBtn").addEventListener("click", openSettings);
+// Avatar dropdown toggle
+const userAvatarBtn = document.getElementById("userAvatarBtn");
+const userDropdown = document.getElementById("userDropdown");
+
+function closeDropdown() {
+  userDropdown.hidden = true;
+  userAvatarBtn.setAttribute("aria-expanded", "false");
+}
+
+userAvatarBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  const open = !userDropdown.hidden;
+  userDropdown.hidden = open;
+  userAvatarBtn.setAttribute("aria-expanded", String(!open));
+});
+
+document.addEventListener("click", (e) => {
+  if (!userDropdown.hidden && !userDropdown.contains(e.target) && e.target !== userAvatarBtn)
+    closeDropdown();
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") closeDropdown();
+});
+
+document.getElementById("settingsBtn").addEventListener("click", () => { closeDropdown(); openSettings(); });
 document.getElementById("settingsBackBtn").addEventListener("click", () => showPage(settingsPreviousPage));
 
 async function saveSettingsField({ btnId, msgId, payload, onSuccess }) {
@@ -1406,7 +1470,7 @@ async function saveSettingsField({ btnId, msgId, payload, onSuccess }) {
     const data = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(data.error || "Save failed");
     currentUser = { ...currentUser, ...data };
-    document.getElementById("userEmail").textContent = "@" + currentUser.username;
+    updateUserMenuDisplay();
     document.getElementById("settingsCurrentUsername").textContent = currentUser.username;
     document.getElementById("settingsCurrentEmail").textContent = currentUser.email;
     msg.textContent = "Saved.";
@@ -1463,6 +1527,7 @@ document.getElementById("savePasswordBtn").addEventListener("click", () => {
 });
 
 document.getElementById("logoutBtn").addEventListener("click", async () => {
+  closeDropdown();
   await fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
   libraryShows = [];
   libraryMovies = [];
