@@ -377,6 +377,12 @@
   .settings-msg { font-size: 12.5px; margin: 10px 0 0; min-height: 18px; }
   .settings-msg.ok { color: var(--good); }
   .settings-msg.err { color: var(--danger); }
+  .settings-danger { border: 1px solid rgba(168,42,58,.3); padding: 24px; margin-bottom: 10px; }
+  .settings-danger .settings-section-title { color: var(--danger); }
+  .settings-danger .settings-current { margin-bottom: 16px; }
+  .settings-delete { padding: 10px 20px; background: transparent; border: 1px solid var(--danger); color: var(--danger); font-size: 13px; font-weight: 500; font-family: inherit; cursor: pointer; transition: background .15s; white-space: nowrap; flex-shrink: 0; height: 40px; align-self: flex-end; }
+  .settings-delete:hover { background: rgba(168,42,58,.07); }
+  .settings-delete:disabled { opacity: .4; cursor: default; }
 
   /* Confirm dialog */
   .confirm-overlay {
@@ -729,6 +735,20 @@
         <button class="settings-save" id="savePasswordBtn">Save</button>
       </div>
       <p class="settings-msg" id="passwordMsg"></p>
+    </div>
+
+    <!-- Danger zone -->
+    <div class="settings-danger">
+      <p class="settings-section-title">Delete account</p>
+      <p class="settings-current">Permanently deletes your account and all your data. This cannot be undone.</p>
+      <div class="settings-row">
+        <div class="settings-field">
+          <label for="deleteAccountPw">Current password</label>
+          <input type="password" id="deleteAccountPw" autocomplete="current-password" placeholder="Required to confirm">
+        </div>
+        <button class="settings-delete" id="deleteAccountBtn">Delete account</button>
+      </div>
+      <p class="settings-msg" id="deleteAccountMsg"></p>
     </div>
   </div>
 </div>
@@ -1416,10 +1436,10 @@ function openSettings() {
   settingsPreviousPage = activeTab === "tv" ? "tvHome" : "moviesHome";
   document.getElementById("settingsCurrentUsername").textContent = currentUser.username;
   document.getElementById("settingsCurrentEmail").textContent = currentUser.email;
-  ["settingsNewUsername","settingsPwForUsername","settingsNewEmail","settingsPwForEmail","settingsCurPw","settingsNewPw"].forEach(id => {
+  ["settingsNewUsername","settingsPwForUsername","settingsNewEmail","settingsPwForEmail","settingsCurPw","settingsNewPw","deleteAccountPw"].forEach(id => {
     document.getElementById(id).value = "";
   });
-  ["usernameMsg","emailMsg","passwordMsg"].forEach(id => {
+  ["usernameMsg","emailMsg","passwordMsg","deleteAccountMsg"].forEach(id => {
     const el = document.getElementById(id);
     el.textContent = "";
     el.className = "settings-msg";
@@ -1524,6 +1544,36 @@ document.getElementById("savePasswordBtn").addEventListener("click", () => {
       document.getElementById("settingsNewPw").value = "";
     },
   });
+});
+
+document.getElementById("deleteAccountBtn").addEventListener("click", async () => {
+  const confirmed = await customConfirm("Delete your account and all data? This cannot be undone.");
+  if (!confirmed) return;
+  const btn = document.getElementById("deleteAccountBtn");
+  const msg = document.getElementById("deleteAccountMsg");
+  const pw = document.getElementById("deleteAccountPw").value;
+  btn.disabled = true;
+  msg.textContent = "";
+  msg.className = "settings-msg";
+  try {
+    const r = await fetch("/api/auth/account", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ currentPassword: pw }),
+    });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(data.error || "Failed to delete account");
+    libraryShows = [];
+    libraryMovies = [];
+    addedShowIds = new Set();
+    addedMovieIds = new Set();
+    currentUser = null;
+    showAuthPage();
+  } catch (e) {
+    msg.textContent = e.message;
+    msg.className = "settings-msg err";
+    btn.disabled = false;
+  }
 });
 
 document.getElementById("logoutBtn").addEventListener("click", async () => {

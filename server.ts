@@ -414,6 +414,22 @@ export default {
         return await handleLogin(req);
       if (pathname === "/api/auth/logout" && req.method === "POST")
         return await handleLogout(req);
+
+      if (pathname === "/api/auth/account" && req.method === "DELETE") {
+        const user = await getSessionUser(req);
+        if (!user) return json({ error: "Unauthorized" }, 401);
+        const body = (await req.json().catch(() => null)) as { currentPassword?: string } | null;
+        if (!body?.currentPassword)
+          return json({ error: "Current password is required" }, 400);
+        const row = db.query("SELECT password_hash FROM users WHERE id = ?").get(user.id) as { password_hash: string } | null;
+        if (!row || !(await Bun.password.verify(body.currentPassword, row.password_hash)))
+          return json({ error: "Incorrect password" }, 401);
+        db.query("DELETE FROM users WHERE id = ?").run(user.id);
+        return new Response(JSON.stringify({ ok: true }), {
+          status: 200,
+          headers: { "Content-Type": "application/json", "Set-Cookie": clearCookieHeader() },
+        });
+      }
       if (pathname === "/api/auth/me" && req.method === "GET") {
         const user = await getSessionUser(req);
         return user
